@@ -1,0 +1,75 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>パスワード生成ツール</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1 class="title">パスワード生成ツール</h1>
+            <p class="subtitle">安全なパスワードを簡単に生成</p>
+        </header>
+
+        <div class="card">
+            <div class="length-selector">
+                <label class="length-option">
+                    <input type="radio" name="length" value="8">
+                    <span>8文字</span>
+                </label>
+                <label class="length-option">
+                    <input type="radio" name="length" value="12" checked>
+                    <span>12文字</span>
+                </label>
+            </div>
+
+            <div class="password-area">
+                <input type="text" id="password" readonly
+                       class="password-input"
+                       placeholder="生成されたパスワード">
+                <button id="copyButton" class="btn" disabled>
+                    コピー
+                </button>
+            </div>
+
+            <div class="option-group">
+                <div class="checkbox-group">
+                    <label>
+                        <input type="checkbox" checked id="uppercase">
+                        <span>大文字 (A-Z)</span>
+                    </label>
+                    <label>
+                        <input type="checkbox" checked id="lowercase">
+                        <span>小文字 (a-z)</span>
+                    </label>
+                </div>
+                <div class="checkbox-group">
+                    <label>
+                        <input type="checkbox" checked id="numbers">
+                        <span>数字 (0-9)</span>
+                    </label>
+                    <label>
+                        <input type="checkbox" checked id="symbols">
+                        <span>記号</span>
+                    </label>
+                </div>
+                <div id="symbolsCustomArea" class="custom-symbols-area">
+                    <input type="text" id="customSymbols" 
+                           placeholder="使用する記号を入力 (例: !@#$%)"
+                           class="custom-symbols"
+                           value="!@#$%^&*()_+-=[]{}|;:,.<>?">
+                </div>
+            </div>
+
+            <button class="btn generate-btn" id="generateButton">
+                パスワードを生成
+            </button>
+        </div>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
