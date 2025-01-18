@@ -16,7 +16,7 @@ func TestGenerator_Generate(t *testing.T) {
 		validate func(string) bool
 	}{
 		{
-			name: "all character types",
+			name: "全ての文字種",
 			config: config.PasswordConfig{
 				Length:       12,
 				UseUppercase: true,
@@ -35,7 +35,7 @@ func TestGenerator_Generate(t *testing.T) {
 			},
 		},
 		{
-			name: "custom symbols",
+			name: "カスタム記号",
 			config: config.PasswordConfig{
 				Length:        8,
 				UseUppercase:  true,
@@ -53,7 +53,7 @@ func TestGenerator_Generate(t *testing.T) {
 			},
 		},
 		{
-			name: "numbers only",
+			name: "数字のみ",
 			config: config.PasswordConfig{
 				Length:     8,
 				UseNumbers: true,
@@ -65,7 +65,7 @@ func TestGenerator_Generate(t *testing.T) {
 			},
 		},
 		{
-			name: "invalid length",
+			name: "無効な長さ",
 			config: config.PasswordConfig{
 				Length:     0,
 				UseNumbers: true,
@@ -77,7 +77,7 @@ func TestGenerator_Generate(t *testing.T) {
 			},
 		},
 		{
-			name: "no character types selected",
+			name: "文字種が選択されていない",
 			config: config.PasswordConfig{
 				Length: 8,
 			},
@@ -94,14 +94,14 @@ func TestGenerator_Generate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := g.Generate(tt.config)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("Generator.Generate() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("Generator.Generate() エラー = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if len(got) != tt.wantLen {
-				t.Errorf("Generator.Generate() length = %v, want %v", len(got), tt.wantLen)
+				t.Errorf("Generator.Generate() 長さ = %v, want %v", len(got), tt.wantLen)
 			}
 			if !tt.wantErr && !tt.validate(got) {
-				t.Errorf("Generator.Generate() = %v, failed validation", got)
+				t.Errorf("Generator.Generate() = %v, 検証失敗", got)
 			}
 		})
 	}
@@ -117,16 +117,16 @@ func TestGenerator_GenerateMultiple(t *testing.T) {
 		UseSymbols:   true,
 	}
 
-	// Generate multiple passwords to ensure they're different
+	// 重複がないことを確認するために複数のパスワードを生成
 	passwords := make(map[string]bool)
 	for i := 0; i < 100; i++ {
 		pass, err := g.Generate(config)
 		if err != nil {
-			t.Errorf("Generator.Generate() error = %v", err)
+			t.Errorf("Generator.Generate() エラー = %v", err)
 			continue
 		}
 		if passwords[pass] {
-			t.Errorf("Generated duplicate password: %v", pass)
+			t.Errorf("重複したパスワードを生成: %v", pass)
 		}
 		passwords[pass] = true
 	}

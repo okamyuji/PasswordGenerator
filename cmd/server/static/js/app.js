@@ -1,10 +1,11 @@
-// static/js/app.js
 class PasswordGenerator {
     constructor() {
         this.checkboxes = ['uppercase', 'lowercase', 'numbers', 'symbols'];
         this.initializeElements();
         this.attachEventListeners();
         this.generatePassword();
+        // CSRFトークンを取得（テンプレートから埋め込まれたトークン）
+        this.csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
     }
 
     initializeElements() {
@@ -82,8 +83,9 @@ class PasswordGenerator {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRF-Token': this.csrfToken // CSRFトークンを送信
                 },
-                body: params.toString()
+                body: params
             });
 
             if (!response.ok) {

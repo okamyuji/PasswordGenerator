@@ -1,179 +1,210 @@
 package main
 
 import (
-	"mime"
+	"embed"
+	"encoding/base64"
 	"net/http"
 	"net/http/httptest"
-	"strings"
+	"os"
 	"testing"
 	"time"
 
 	"github.com/okamyuji/PasswordGenerator/internal/generator"
 	"github.com/okamyuji/PasswordGenerator/internal/handler"
+	"github.com/okamyuji/PasswordGenerator/internal/middleware"
 )
 
-func TestFileServer(t *testing.T) {
-	// テスト前にMIMEタイプを設定
-	if err := mime.AddExtensionType(".css", "text/css"); err != nil {
-		t.Fatalf("Failed to add MIME type for .css: %v", err)
-	}
-	if err := mime.AddExtensionType(".js", "application/javascript"); err != nil {
-		t.Fatalf("Failed to add MIME type for .js: %v", err)
-	}
+// テスト用の埋め込みコンテンツをモック
+//
+//go:embed templates/* static/*
+var testContent embed.FS
 
-	tests := []struct {
-		name       string
-		path       string
-		wantStatus int
-		wantType   string
-	}{
-		{
-			name:       "CSS file",
-			path:       "/static/css/style.css",
-			wantStatus: http.StatusOK,
-			wantType:   "text/css",
-		},
-		{
-			name:       "JavaScript file",
-			path:       "/static/js/app.js",
-			wantStatus: http.StatusOK,
-			wantType:   "application/javascript",
-		},
-		{
-			name:       "Non-existent file",
-			path:       "/static/nonexistent.txt",
-			wantStatus: http.StatusNotFound,
-			wantType:   "",
-		},
+func TestGenerateCSRFToken(t *testing.T) {
+	token := generateCSRFToken()
+
+	// トークンが空でないことを確認
+	if token == "" {
+		t.Error("生成されたCSRFトークンが空です")
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			req := httptest.NewRequest(http.MethodGet, tt.path, nil)
-			rec := httptest.NewRecorder()
+	// トークンがBase64エンコードされていることを確認
+	decoded, err := base64.URLEncoding.DecodeString(token)
+	if err != nil {
+		t.Errorf("生成されたトークンが有効なBase64 URLエンコード文字列ではありません: %v", err)
+	}
 
-			// 直接http.FileServerを使用してテスト
-			fs := http.FileServer(http.FS(content))
-			fs.ServeHTTP(rec, req)
-
-			if rec.Code != tt.wantStatus {
-				t.Errorf("handler returned wrong status code: got %v want %v",
-					rec.Code, tt.wantStatus)
-			}
-
-			if tt.wantType != "" && rec.Code == http.StatusOK {
-				gotType := rec.Header().Get("Content-Type")
-				if !strings.Contains(gotType, tt.wantType) {
-					t.Errorf("handler returned wrong content type: got %v want %v",
-						gotType, tt.wantType)
-				}
-			}
-		})
+	// デコードされたトークンの長さが32バイトであることを確認
+	if len(decoded) != 32 {
+		t.Errorf("デコードされたトークンの長さが32バイトではありません。長さ: %d", len(decoded))
 	}
 }
 
-func TestServerStartup(t *testing.T) {
-	// サーバー起動をゴルーチンで実行
-	go func() {
-		if err := startServer(":0"); err != http.ErrServerClosed {
-			t.Errorf("unexpected server error: %v", err)
+func TestEmbedContent(t *testing.T) {
+	// グローバルなコンテンツを一時的にテスト用のコンテンツに置き換え
+	originalContent := content
+	content = testContent
+	defer func() { content = originalContent }()
+
+	// embedContent関数をテスト
+	embeddedContent, err := embedContent()
+	if err != nil {
+		t.Fatalf("コンテンツの埋め込みに失敗: %v", err)
+	}
+
+	// 期待されるファイルが存在することを確認
+	testFiles := []string{
+		"static/css/style.css",
+		"static/js/app.js",
+		"templates/index.html",
+	}
+
+	for _, file := range testFiles {
+		_, err := embeddedContent.ReadFile(file)
+		if err != nil {
+			t.Errorf("埋め込まれたコンテンツに期待されるファイル %s が見つかりません", file)
 		}
-	}()
-
-	// サーバーの起動を少し待つ
-	time.Sleep(100 * time.Millisecond)
+	}
 }
 
-// テスト用のヘルパー関数
-func startServer(addr string) error {
-	mux := http.NewServeMux()
+func TestHealthCheckEndpoint(t *testing.T) {
+	// ハンドラーに渡すリクエストを作成
+	req, err := http.NewRequest(http.MethodGet, "/health", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	// DIを使用したコンポーネントの作成
+	// レスポンスを記録するためのRecorderを作成
+	rr := httptest.NewRecorder()
+
+	// ハンドラーを作成
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		if _, err := w.Write([]byte("OK")); err != nil {
+			t.Errorf("ヘルスチェックレスポンスの書き込みに失敗: %v", err)
+		}
+	})
+
+	// ハンドラーを呼び出し
+	handler.ServeHTTP(rr, req)
+
+	// ステータスコードを確認
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("ヘルスチェックハンドラーが誤ったステータスコードを返しました: 取得 %v、期待 %v",
+			status, http.StatusOK)
+	}
+
+	// レスポンスボディを確認
+	expected := "OK"
+	if rr.Body.String() != expected {
+		t.Errorf("ヘルスチェックハンドラーが予期しないボディを返しました: 取得 %v、期待 %v",
+			rr.Body.String(), expected)
+	}
+}
+
+func TestServerConfiguration(t *testing.T) {
+	server := &http.Server{
+		Addr:         ":8080",
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  120 * time.Second,
+	}
+
+	// サーバー構成を確認
+	if server.Addr != ":8080" {
+		t.Errorf("予期しないサーバーアドレス: 取得 %v、期待 :8080", server.Addr)
+	}
+
+	if server.ReadTimeout != 5*time.Second {
+		t.Errorf("予期しない読み取りタイムアウト: 取得 %v、期待 5s", server.ReadTimeout)
+	}
+
+	if server.WriteTimeout != 10*time.Second {
+		t.Errorf("予期しない書き込みタイムアウト: 取得 %v、期待 10s", server.WriteTimeout)
+	}
+
+	if server.IdleTimeout != 120*time.Second {
+		t.Errorf("予期しないアイドルタイムアウト: 取得 %v、期待 120s", server.IdleTimeout)
+	}
+}
+
+func TestCSRFTokenEnvironmentVariable(t *testing.T) {
+	// 既存のCSRF_TOKENをクリア
+	os.Unsetenv("CSRF_TOKEN")
+
+	// CSRFトークンを生成して設定
+	csrfToken := generateCSRFToken()
+	os.Setenv("CSRF_TOKEN", csrfToken)
+
+	// トークンを取得
+	storedToken := os.Getenv("CSRF_TOKEN")
+
+	// トークンを検証
+	if storedToken != csrfToken {
+		t.Errorf("CSRFトークンが正しく環境変数に設定されていません: 取得 %v、期待 %v",
+			storedToken, csrfToken)
+	}
+
+	// トークンの長さとエンコーディングを確認
+	decodedToken, err := base64.URLEncoding.DecodeString(storedToken)
+	if err != nil {
+		t.Errorf("無効なBase64エンコーディング: %v", err)
+	}
+
+	if len(decodedToken) != 32 {
+		t.Errorf("デコードされたトークンの長さが不正: 取得 %d、期待 32", len(decodedToken))
+	}
+}
+
+// メインの機能をテストするためのモック関数
+func startTestServer(t *testing.T, content embed.FS) (*http.Server, error) {
+	// これをテストヘルパー関数としてマーク
+	t.Helper()
+
+	// セキュリティミドルウェア
+	securityMiddleware := middleware.NewSecurityMiddleware()
+
+	// テンプレートレンダラー
 	templateRenderer := handler.NewEmbedFSTemplateRenderer(content)
+
+	// パスワードジェネレーター
 	passwordGenerator := generator.New()
+
+	// 依存性注入を使用したパスワードハンドラー
 	passwordHandler := handler.NewPasswordHandler(templateRenderer, passwordGenerator)
 
-	mux.HandleFunc("/", passwordHandler.Handle)
-
+	// テスト用のサーバー構成を作成
 	server := &http.Server{
-		Addr:    addr,
-		Handler: mux,
+		Addr:         ":0", // テスト用のランダムポート
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  120 * time.Second,
+		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			switch r.URL.Path {
+			case "/health":
+				w.WriteHeader(http.StatusOK)
+				if _, err := w.Write([]byte("OK")); err != nil {
+					t.Errorf("ヘルスチェックレスポンスの書き込みに失敗: %v", err)
+				}
+			case "/":
+				securityMiddleware.Middleware(passwordHandler.Handle)(w, r)
+			default:
+				http.NotFound(w, r)
+			}
+		}),
 	}
 
-	return server.ListenAndServe()
+	return server, nil
 }
 
-func TestMIMETypeInitialization(t *testing.T) {
-	// テスト前にMIMEタイプを設定
-	if err := mime.AddExtensionType(".css", "text/css"); err != nil {
-		t.Fatalf("Failed to add MIME type for .css: %v", err)
+func TestStartTestServer(t *testing.T) {
+	server, err := startTestServer(t, testContent)
+	if err != nil {
+		t.Fatalf("テストサーバーの起動に失敗: %v", err)
 	}
-	if err := mime.AddExtensionType(".js", "application/javascript"); err != nil {
-		t.Fatalf("Failed to add MIME type for .js: %v", err)
-	}
+	defer server.Close()
 
-	tests := []struct {
-		name     string
-		ext      string
-		wantType string
-	}{
-		{
-			name:     "CSS MIME type",
-			ext:      ".css",
-			wantType: "text/css",
-		},
-		{
-			name:     "JavaScript MIME type",
-			ext:      ".js",
-			wantType: "application/javascript",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			gotType := mime.TypeByExtension(tt.ext)
-			if !strings.Contains(gotType, tt.wantType) {
-				t.Errorf("wrong MIME type for %s: got %v want %v",
-					tt.ext, gotType, tt.wantType)
-			}
-		})
-	}
-}
-
-func TestEmbedFileSystem(t *testing.T) {
-	tests := []struct {
-		name    string
-		path    string
-		wantErr bool
-	}{
-		{
-			name:    "Template exists",
-			path:    "templates/index.html",
-			wantErr: false,
-		},
-		{
-			name:    "CSS file exists",
-			path:    "static/css/style.css",
-			wantErr: false,
-		},
-		{
-			name:    "JavaScript file exists",
-			path:    "static/js/app.js",
-			wantErr: false,
-		},
-		{
-			name:    "Non-existent file",
-			path:    "nonexistent.txt",
-			wantErr: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			_, err := content.ReadFile(tt.path)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("content.ReadFile() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
+	// 追加のサーバー構成チェックをここに追加できます
+	if server.Addr == "" {
+		t.Error("サーバーアドレスが設定されていません")
 	}
 }

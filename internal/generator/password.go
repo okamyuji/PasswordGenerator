@@ -17,7 +17,7 @@ func New() *Generator {
 func (g *Generator) Generate(cfg config.PasswordConfig) (string, error) {
 	// 最初にバリデーションを実行
 	if cfg.Length <= 0 {
-		return "", fmt.Errorf("invalid length: %d", cfg.Length)
+		return "", fmt.Errorf("無効な長さ: %d", cfg.Length)
 	}
 
 	var charsets []string
