@@ -4,8 +4,53 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ .CSRFToken }}">
-    <title>パスワード生成ツール</title>
+    <!-- SEOメタタグ -->
+    <title>パスワードジェネレーター - 安全で強力なパスワードを簡単に生成</title>
+    <meta name="description" content="安全で高度にカスタマイズ可能なパスワードジェネレーター。文字種や長さを自由に設定し、暗号学的に安全なパスワードを生成できます。">
+    <meta name="keywords" content="パスワードジェネレーター, パスワード生成, セキュリティ, ランダムパスワード, 強力なパスワード">
+    
+    <!-- Open Graph プロトコル -->
+    <meta property="og:title" content="パスワードジェネレーター - 安全なパスワード作成ツール">
+    <meta property="og:description" content="カスタマイズ可能な安全なパスワードジェネレーター。簡単に強力なパスワードを作成できます。">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://okamyuji.com/password-generator">
+    
+    <!-- Content Security Policy更新 -->
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self'; 
+        script-src 'self' 'unsafe-inline'; 
+        style-src 'self' 'unsafe-inline'; 
+        font-src 'self' data:; 
+        img-src 'self' data:
+    ">
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/img/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/img/favicon-16x16.png">
+    <link rel="shortcut icon" href="/static/img/favicon.ico">
+
+    <!-- プリロードとリソースヒント -->
+    <link rel="preload" href="/static/css/style.css" as="style">
+    <link rel="preload" href="/static/js/app.js" as="script">
+    
+    <!-- スタイルシート -->
     <link rel="stylesheet" href="/static/css/style.css">
+
+    <!-- 構造化データ (JSON-LD) -->
+    <script type="application/ld+json">
+        {
+            "@context": "https://schema.org",
+            "@type": "WebApplication",
+            "name": "パスワードジェネレーター",
+            "description": "安全で高度にカスタマイズ可能なパスワード生成ツール",
+            "applicationCategory": "Security Tool",
+            "operatingSystem": "All",
+            "offers": {
+                "@type": "Offer",
+                "price": "0",
+                "priceCurrency": "JPY"
+            }
+        }
+        </script>
 </head>
 <body>
     <div class="container">

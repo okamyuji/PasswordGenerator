@@ -14,7 +14,7 @@ import (
 	"github.com/okamyuji/PasswordGenerator/internal/middleware"
 )
 
-//go:embed templates/* static/*
+//go:embed templates/* static/* static/img/* static/css/* static/js/*
 var content embed.FS
 
 func main() {
