@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>パスワード生成ツール</title>
+    <style>
+        body {
+            background-color: #f9fafb;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 42rem;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .title {
+            font-size: 1.875rem;
+            font-weight: bold;
+            color: #2563eb;
+        }
+        .subtitle {
+            color: #6b7280;
+            margin-top: 0.5rem;
+        }
+        .card {
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+        }
+        .password-area {
+            margin-bottom: 1.5rem;
+            display: flex;
+            gap: 0.5rem;
+        }
+        .password-input {
+            flex: 1;
+            padding: 0.5rem 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            background-color: #f9fafb;
+            font-family: monospace;
+            font-size: 1.125rem;
+        }
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            cursor: pointer;
+            white-space: nowrap;
+            min-width: 100px;
+        }
+        .btn:hover {
+            background-color: #1d4ed8;
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .option-group {
+            margin-bottom: 1.5rem;
+        }
+        .checkbox-group {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .hidden {
+            display: none;
+        }
+        .custom-symbols {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            margin-top: 0.5rem;
+        }
+        .generate-btn {
+            display: block;
+            width: 100%;
+            padding: 0.75rem;
+            font-size: 1.125rem;
+        }
+        .length-selector {
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            background-color: #f3f4f6;
+            border-radius: 0.375rem;
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+        }
+        .length-option {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .custom-symbols-area {
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background-color: #f3f4f6;
+            border-radius: 0.375rem;
+        }
+        .custom-symbols {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            font-family: monospace;
+            font-size: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1 class="title">パスワード生成ツール</h1>
+            <p class="subtitle">安全なパスワードを簡単に生成</p>
+        </header>
+
+        <div class="card">
+            <div class="length-selector">
+                <label class="length-option">
+                    <input type="radio" name="length" value="8" onchange="generatePassword()">
+                    <span>8文字</span>
+                </label>
+                <label class="length-option">
+                    <input type="radio" name="length" value="12" checked onchange="generatePassword()">
+                    <span>12文字</span>
+                </label>
+            </div>
+
+            <div class="password-area">
+                <input type="text" id="password" readonly
+                       class="password-input"
+                       placeholder="生成されたパスワード">
+                <button onclick="copyPassword()" id="copyButton"
+                        class="btn" disabled>
+                    コピー
+                </button>
+            </div>
+
+            <div class="option-group">
+                <div class="checkbox-group">
+                    <label>
+                        <input type="checkbox" checked id="uppercase" onchange="generatePassword()">
+                        <span>大文字 (A-Z)</span>
+                    </label>
+                    <label>
+                        <input type="checkbox" checked id="lowercase" onchange="generatePassword()">
+                        <span>小文字 (a-z)</span>
+                    </label>
+                </div>
+                <div class="checkbox-group">
+                    <label>
+                        <input type="checkbox" checked id="numbers" onchange="generatePassword()">
+                        <span>数字 (0-9)</span>
+                    </label>
+                    <label>
+                        <input type="checkbox" checked id="symbols" onchange="generatePassword()">
+                        <span>記号</span>
+                    </label>
+                </div>
+                <div id="symbolsCustomArea" class="custom-symbols-area">
+                    <input type="text" id="customSymbols" 
+                           placeholder="使用する記号を入力 (例: !@#$%)"
+                           class="custom-symbols"
+                           onchange="generatePassword()"
+                           value="!@#$%^&*()_+-=[]{}|;:,.<>?">
+                </div>
+            </div>
+
+            <button onclick="generatePassword()"
+                    class="btn generate-btn"
+                    id="generateButton">
+                パスワードを生成
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const checkboxes = ['uppercase', 'lowercase', 'numbers', 'symbols'];
+
+        document.getElementById('symbols').addEventListener('change', function() {
+            document.getElementById('symbolsCustomArea').style.display = 
+                this.checked ? 'block' : 'none';
+        });
+
+        // ページ読み込み時の表示制御
+        document.addEventListener('DOMContentLoaded', function() {
+            const symbolsCheckbox = document.getElementById('symbols');
+            const symbolsArea = document.getElementById('symbolsCustomArea');
+            symbolsArea.style.display = symbolsCheckbox.checked ? 'block' : 'none';
+        });
+
+        function validateOptions() {
+            const anyChecked = checkboxes.some(id => document.getElementById(id).checked);
+            document.getElementById('generateButton').disabled = !anyChecked;
+            return anyChecked;
+        }
+
+        checkboxes.forEach(id => {
+            document.getElementById(id).addEventListener('change', validateOptions);
+        });
+
+        async function generatePassword() {
+            if (!validateOptions()) return;
+
+            try {
+                // URLSearchParamsを使用してデータを送信
+                const params = new URLSearchParams();
+                params.append('length', document.querySelector('input[name="length"]:checked').value);
+                params.append('uppercase', document.getElementById('uppercase').checked.toString());
+                params.append('lowercase', document.getElementById('lowercase').checked.toString());
+                params.append('numbers', document.getElementById('numbers').checked.toString());
+                params.append('symbols', document.getElementById('symbols').checked.toString());
+                params.append('customSymbols', document.getElementById('customSymbols').value);
+
+                const response = await fetch('/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: params.toString()
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const password = await response.text();
+                document.getElementById('password').value = password;
+                document.getElementById('copyButton').disabled = !password;
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('password').value = 'エラーが発生しました';
+            }
+        }
+
+        function copyPassword() {
+            const passwordField = document.getElementById('password');
+            passwordField.select();
+            document.execCommand('copy');
+            
+            const copyButton = document.getElementById('copyButton');
+            const originalText = copyButton.textContent;
+            copyButton.textContent = 'コピーしました';
+            setTimeout(() => {
+                copyButton.textContent = originalText;
+            }, 2000);
+        }
+
+        // 初回生成
+        generatePassword();
+    </script>
+</body>
+</html>
