@@ -16,8 +16,14 @@ func New() *Generator {
 
 func (g *Generator) Generate(cfg config.PasswordConfig) (string, error) {
 	// 最初にバリデーションを実行
+	const MaxPasswordLength = 1000 // パスワードの最大長を設定
+	
 	if cfg.Length <= 0 {
 		return "", fmt.Errorf("無効な長さ: %d", cfg.Length)
+	}
+	
+	if cfg.Length > MaxPasswordLength {
+		return "", fmt.Errorf("パスワード長が最大値を超えています: %d (最大: %d)", cfg.Length, MaxPasswordLength)
 	}
 
 	var charsets []string
