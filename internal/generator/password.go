@@ -26,6 +26,7 @@ func (g *Generator) Generate(cfg config.PasswordConfig) (string, error) {
 		return "", fmt.Errorf("パスワード長が最大値を超えています: %d (最大: %d)", cfg.Length, MaxPasswordLength)
 	}
 
+	// 選択された文字セットの準備
 	var charsets []string
 	if cfg.UseUppercase {
 		charsets = append(charsets, config.Uppercase)
@@ -45,33 +46,12 @@ func (g *Generator) Generate(cfg config.PasswordConfig) (string, error) {
 	}
 
 	if len(charsets) == 0 {
-		return "", fmt.Errorf("no character types selected")
+		return "", fmt.Errorf("文字タイプが選択されていません")
 	}
 
-	// 選択された文字セットの準備
-	if cfg.UseUppercase {
-		charsets = append(charsets, config.Uppercase)
-	}
-	if cfg.UseLowercase {
-		charsets = append(charsets, config.Lowercase)
-	}
-	if cfg.UseNumbers {
-		charsets = append(charsets, config.Numbers)
-	}
-	if cfg.UseSymbols {
-		if cfg.CustomSymbols != "" {
-			charsets = append(charsets, cfg.CustomSymbols)
-		} else {
-			charsets = append(charsets, config.Symbols)
-		}
-	}
-
-	if len(charsets) == 0 || cfg.Length <= 0 {
-		return "", nil
-	}
-
+	// セキュアなメモリ割り当て（既に上限チェック済み）
 	result := make([]byte, cfg.Length)
-	used := make(map[int]bool)
+	used := make(map[int]bool, cfg.Length)
 
 	// 各文字セットから1文字ずつ必ず選択
 	for i, charset := range charsets {
