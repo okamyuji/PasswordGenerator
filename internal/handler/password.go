@@ -55,7 +55,7 @@ func NewPasswordHandler(
 }
 
 func (h *PasswordHandler) Handle(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodGet {
+	if r.Method == http.MethodGet || r.Method == http.MethodHead {
 		h.handleGet(w, r)
 		return
 	}
@@ -66,7 +66,13 @@ func (h *PasswordHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "メソッドは許可されていません", http.StatusMethodNotAllowed)
 }
 
-func (h *PasswordHandler) handleGet(w http.ResponseWriter, _ *http.Request) {
+func (h *PasswordHandler) handleGet(w http.ResponseWriter, r *http.Request) {
+	// HEADリクエストも許可
+	if r.Method == http.MethodHead {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+	
 	// CSRFトークンを取得
 	csrfToken := os.Getenv("CSRF_TOKEN")
 
