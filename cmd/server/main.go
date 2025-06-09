@@ -69,9 +69,15 @@ func main() {
 		})(w, r)
 	})
 
+	// Cloud Run対応: 環境変数PORTからポート番号を取得
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
 	// サーバー構成
 	server := &http.Server{
-		Addr:         ":8080",
+		Addr:         ":" + port,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  120 * time.Second,
