@@ -69,9 +69,6 @@ dist/
 Dockerfile*
 docker-compose*
 
-# Security scan files
-snyk-code.sarif
-
 # Test files
 *_test.go
 
