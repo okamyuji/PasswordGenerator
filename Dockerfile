@@ -1,5 +1,5 @@
 # Build stage
-FROM golang:1.23-alpine AS builder
+FROM golang:1.26-alpine AS builder
 
 # セキュリティのためにnon-rootユーザーを作成
 RUN adduser -D -g '' appuser
